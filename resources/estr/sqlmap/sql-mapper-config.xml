@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+	<typeAliases>
+		<typeAlias alias="egovMap"
+			type="egovframework.rte.psl.dataaccess.util.EgovMap" />
+
+		<!-- Common -->
+		<typeAlias alias="estrCmmVo" type="estr.cmm.vo.EstrCommonVo" />
+
+		<!-- Customer -->
+		<typeAlias alias="customerVo"
+			type="com.posco_daewoo.estr.customer.vo.CustomerVo" />
+
+		<!-- productVo -->
+		<typeAlias alias="productVo"
+			type="com.posco_daewoo.estr.product.vo.ProductVo" />
+
+		<!-- estimateVo -->
+		<typeAlias alias="estimateVo"
+			type="com.posco_daewoo.estr.product.vo.EstimateVo" />
+
+		<!-- communicationVo -->
+		<typeAlias alias="communicationVo"
+			type="com.posco_daewoo.estr.communication.vo.CommunicationVo" />
+
+		<!-- dashboardVo -->
+		<typeAlias alias="dashboardVo"
+			type="com.posco_daewoo.estr.product.vo.DashBoardVo" />
+
+		<!-- Logical Customer -->
+		<typeAlias alias="logicCustomerVo"
+			type="com.posco_daewoo.estr.customer.vo.LogicalCustomerVo" />
+
+		<!--ESTR WebLog -->
+		<typeAlias alias="estrWebLogVo" type="estr.cmm.vo.EstrWeblogVo" />
+		
+		<!--ESTR SMS/EMAIL Schedule -->
+		<typeAlias alias="transScheduleVo" type="com.posco_daewoo.estr.communication.vo.TransScheduleVo" />
+		
+		<!--ESTR SMS/EMAIL Schedule -->
+		<typeAlias alias="noticeVo" type="estr.cmm.vo.EstrNoticeVo" />
+		
+
+	</typeAliases>
+</configuration>
+
+

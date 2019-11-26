@@ -1,0 +1,660 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.posco_daewoo.estr.product.service.impl.ProductMapper">
+	<!-- 관리제품목록 -->
+	<select id="getProductList" parameterType="productVo" resultType="productVo">
+		<![CDATA[ 
+			SELECT 
+				product_id as productId --제품ID
+				,product_type_code as productTypeCode --제품분류 코드 전체:9999,CR  1000,F/H 2000,PO  3000,GI   4000,HGI 5000,EGI 6000,NO 7000,GO 8000,HR  9000,후판1100,포스맥 1200,철근 1300,구조용 강관 1400,D-bar 1500,빌렛 1600,블룸 1700,슬라브 1800,선재 1900,
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'PRODUCT_TYPE_CODE' and CD_V = pl.product_type_code) as productTypeCodeName
+				,status_code as statusCode --상태코드 (등록대기NULL 2등록완료 3거래중  5가격확정 6등록거절 7재등록신청 8판매완료, 9삭제)
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'STATUS_CODE' and CD_V = pl.status_code) as statusCodeName
+				,product_name as productName --품명(Coil,Sheet, Skelp)
+				,spec as spec --규격
+				,coating_weight as coatingWeight --도금량 (g)
+				,rtrim(to_char(thick, 'FM99999990.9999'), '.') as thick --두께(범위 : 0.100~99.999)
+				,rtrim(to_char(width, 'FM99999990.9999'), '.') as width --폭(범위 : 1~1,800)
+				,length as length --길이(범위 : 1~99,999)
+				,rtrim(to_char(weight, 'FM99999990.9999'), '.') as weight --중량(KG) (1~99,999)
+				,region_code as regionCode --재고지역코드(1광양,2시화,3평택,4대구,5부산,6인천,0,전국)
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'REGION_CODE' and CD_V = pl.region_code) as regionCodeName 				
+				,manufacturer_code as manufacturerCode --제조사코드 (1포스코 ,2동부 ,3동국 ,4현대 ,5수입재)
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'MANUFACTURER_CODE' and CD_V = pl.manufacturer_code) as manufacturerCodeName
+				,sales_unit_price as salesUnitPrice --판매가격(\/kg) NULL(가격협의) -> NOT NULL 일때 표시 	
+				,product_grade_code as productGradeCode -- 등급(1.정품, 2.주문외)
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'PRODUCT_GRADE_CODE' and CD_V = pl.product_grade_code) as productGradeCodeName			
+				,'' as modifiedDate --수정일자
+				,'Y' as includeYn --견적포함여부
+		 	FROM POSPORTAL.TB_ES_PRODUCT pl
+		 	WHERE 1=1 
+		 ]]>
+		 	AND STATUS_CODE in ('2','3') 
+		<if test="createDateFrom != null and createDateFrom != ''   ">
+				AND pl.create_date >= to_Date(#{createDateFrom},'YYYY-MM-DD')
+		</if>
+		<if test="createDateTo != null and createDateTo != ''  ">
+				AND to_Date(#{createDateTo},'YYYY-MM-DD')+1 >= pl.create_date
+		</if>
+		<if test="productTypeCode != null and productTypeCode != '' and productTypeCode != 'undefined'">
+				AND pl.product_type_code = #{productTypeCode}
+		</if>
+		<if test="productName != null and productName != '' and productName != 'undefined'">
+				AND LOWER(pl.product_name) like '%' || #{productName} || '%'
+		</if>
+		<if test="spec != null and spec != ''">
+				AND pl.spec = #{spec}
+		</if>
+		<if test="ownTypeCode != null and ownTypeCode != ''">
+				AND pl.own_type_code = #{ownTypeCode}
+		</if>
+
+		<if test="thickFrom != null and thickFrom != '' and thickFrom != 'undefined'">
+				AND rtrim(to_char(pl.thick, 'FM99999990.9999'), '.')  >= #{thickFrom}
+		</if>
+		<if test="thickTo != null and thickTo != '' and thickTo != 'undefined'">
+				AND #{thickTo} >= rtrim(to_char(pl.thick, 'FM99999990.9999'), '.')
+		</if>
+		<if test="widthFrom != null and widthFrom != ''">
+				AND rtrim(to_char(pl.width, 'FM99999990.9999'), '.')  >= #{widthFrom}
+		</if>
+		<if test="widthTo != null and widthTo != ''">
+				AND #{widthTo} >= rtrim(to_char(pl.width, 'FM99999990.9999'), '.')
+		</if>
+		<if test="length != null and length != ''">
+				AND pl.length = #{length}
+		</if>
+
+		<if test="productNumber != null and productNumber != ''">
+				AND pl.product_Number like '%' || #{productNumber} || '%'
+		</if>
+
+
+
+		<if test="expectedUnitPriceFrom != null and expectedUnitPriceFrom != '' ">
+				AND pl.expected_unit_price >= #{expectedUnitPriceFrom}
+		</if>
+		<if test="expectedUnitPriceTo != null  and expectedUnitPriceTo != ''">
+				AND  #{expectedUnitPriceTo} >= pl.expected_unit_price
+		</if>
+
+		<if test="purchaseUnitPriceFrom != null and purchaseUnitPriceFrom != ''">
+				AND pl.purchase_unit_price >= #{purchaseUnitPriceFrom}
+		</if>
+		<if test="purchaseUnitPriceTo != null and purchaseUnitPriceTo != ''  ">
+				AND  #{purchaseUnitPriceTo} >= pl.purchase_unit_price
+		</if>
+
+		<if test="salesUnitPriceFrom != null  and salesUnitPriceFrom != ''">
+				AND pl.sales_unit_price >= #{salesUnitPriceFrom}
+		</if>
+		<if test="salesUnitPriceTo != null and salesUnitPriceTo != ''  ">
+				AND  #{salesUnitPriceTo} >= pl.sales_unit_price
+		</if>
+
+		<if test="weightFrom != null and weightFrom != ''  ">
+				AND pl.weight >= #{weightFrom}
+		</if>
+		<if test="weightTo != null and weightTo != ''  ">
+				AND  #{weightTo} >= pl.weight
+		</if>
+
+		<if test=' oilingCode != null and oilingCode != ""'>
+					AND pl.oiling_code =  #{oilingCode}
+		</if>
+
+		<if test="coatingWeight != null and coatingWeight != ''  ">
+				AND pl.coating_weight like '%' || #{coatingWeight} || '%'
+		</if>
+
+		<if test="postTreatmentCode != null and postTreatmentCode != ''  ">
+				AND pl.post_treatment_code = #{postTreatmentCode}
+		</if>
+
+		<if test='picFileIdYn != null and picFileIdYn.equals("Y")   '>
+				AND pl.pic_file_id IS NOT NULL
+		</if>
+		<if test='picFileIdYn != null and picFileIdYn.equals("N")   '>
+				AND pl.pic_file_id IS NULL
+		</if>
+
+		<if test="originCode != null  and originCode != ''">
+				AND pl.origin_code = #{originCode}
+		</if>
+
+
+		<if test="cPct != null and cPct != ''">
+				AND  rtrim(to_char(pl.c_pct, 'FM99999990.9999'), '.') like '%' || #{cPct} || '%'
+		</if>
+
+		<if test="ypMpa != null and ypMpa != ''  ">
+				AND rtrim(to_char(pl.yp_mpa, 'FM99999990.9999'), '.') like '%' || #{ypMpa} || '%'
+		</if>
+		<if test="tsMpa != null and tsMpa != '' ">
+				AND rtrim(to_char(pl.ts__mpa, 'FM99999990.9999'), '.') like '%' || #{tsMpa} || '%'
+		</if>
+
+		<if test="elMpa != null and elMpa != '' ">
+				AND rtrim(to_char(pl.el_mpa, 'FM99999990.9999'), '.') like '%' || #{elMpa} || '%'
+		</if>
+
+		<if test='msFileIdYn != null and msFileIdYn.equals("Y")'>
+				AND pl.ms_file_id IS NOT NULL
+		</if>
+		<if test='msFileIdYn != null and msFileIdYn.equals("N")'>
+				AND pl.ms_file_id IS NULL
+		</if>
+
+		<if test="supplierCompanyCode != null and supplierCompanyCode != '' ">
+				AND pl.supplier_company_code = #{supplierCompanyCode}
+		</if>
+
+		<if test="regionCode != null and regionCode != '' ">
+				AND pl.region_code = #{regionCode}
+		</if>
+
+		<if test="warehouse != null and warehouse != ''">
+				AND pl.warehouse like  #{warehouse} || '%'
+		</if>
+
+
+		<if test="postTreatmentCode != null and postTreatmentCode != '' ">
+				AND pl.POST_TREATMENT_CODE = #{postTreatmentCode}
+		</if>
+
+		<if test="manufacturerCode != null and manufacturerCode != '' ">
+				AND pl.manufacturer_code = #{manufacturerCode}
+		</if>
+
+		<if test="productGradeCode != null and productGradeCode != '' ">
+				AND pl.PRODUCT_GRADE_CODE = #{productGradeCode}
+		</if>
+
+
+		<if test='tmpChkPrdId != null '>
+				AND pl.product_id in 
+			<foreach collection="tmpChkPrdId" item="item" open="(" close=")" separator=",">
+		            #{item}
+			</foreach>
+		</if>
+			 ORDER BY pl.MODIFIED_DATE DESC
+	</select>
+
+	<!-- 모바일 - 관리제품목록 -->
+	<select id="getMobileProductList" parameterType="productVo" resultType="productVo">
+		<![CDATA[ 
+			SELECT 
+				product_id as productId --제품ID
+				,product_type_code as productTypeCode --제품분류 코드 전체:9999,CR  1000,F/H 2000,PO  3000,GI   4000,HGI 5000,EGI 6000,NO 7000,GO 8000,HR  9000,후판1100,포스맥 1200,철근 1300,구조용 강관 1400,D-bar 1500,빌렛 1600,블룸 1700,슬라브 1800,선재 1900,
+				,product_name as productName --품명(Coil,Sheet, Skelp)
+				,status_code as statusCode --상태코드 (등록대기NULL 2등록완료 3거래중  5가격확정 6등록거절 7재등록신청 8판매완료, 9삭제)
+				,spec as spec --규격
+				,coating_weight as coatingWeight --도금량 (g)
+				,rtrim(to_char(thick, 'FM99999990.9999'), '.') as thick --두께(범위 : 0.100~99.999)
+				,rtrim(to_char(width, 'FM99999990.9999'), '.') as width --폭(범위 : 1~1,800)
+				,length as length --길이(범위 : 1~99,999)
+				,rtrim(to_char(weight, 'FM99999990.9999'), '.') as weight --중량(KG) (1~99,999)
+				,sales_unit_price as salesUnitPrice --판매가격(\/kg) NULL(가격협의) -> NOT NULL 일때 표시 				
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'MANUFACTURER_CODE' and CD_V = pl.manufacturer_code) as manufacturerCodeName
+				,product_grade_code as productGradeCode -- 등급(1.정품, 2.주문외)
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'PRODUCT_GRADE_CODE' and CD_V = pl.product_grade_code) as productGradeCodeName
+				,'' as modifiedDate --수정일자
+				,'Y' as includeYn --견적포함여부
+		 	FROM (
+		 	SELECT rownum AS rnum,pl.* FROM 
+		 	(
+		 		SELECT product_id,product_type_code,product_name,spec,weight,coating_weight,thick,width,length,sales_unit_price,product_grade_code,manufacturer_code,status_code FROM POSPORTAL.TB_ES_PRODUCT pl
+		 		WHERE 1=1 
+		 ]]>
+		 		AND STATUS_CODE in ( '2' ,'3')		 	
+		<if test="productTypeCode != null and productTypeCode != '' and productTypeCode != 'undefined' and productTypeCode != 'null'">
+					AND pl.product_type_code = #{productTypeCode}
+		</if>
+
+
+		<if test="productName != null and productName != '' and productName != 'undefined'">
+				AND LOWER(pl.product_name) like '%' || #{productName} || '%'
+		</if>
+
+		<if test="spec != null and spec == 'A1008'">
+					AND pl.spec like  'A1008%' 
+		</if>
+
+		<if test="spec != null and spec != '' and spec != 'A1008'">
+					AND pl.spec = #{spec}
+		</if>
+		<if test="thickFrom != null and thickFrom != '' and thickFrom != 'undefined'">
+					AND rtrim(to_char(pl.thick, 'FM99999990.9999'), '.')  >= #{thickFrom}
+		</if>
+		<if test="thickTo != null and thickTo != '' and thickTo != 'undefined'">
+					AND #{thickTo} >= rtrim(to_char(pl.thick, 'FM99999990.9999'), '.')
+		</if>
+		<if test="widthFrom != null and widthFrom != ''">
+					AND rtrim(to_char(pl.width, 'FM99999990.9999'), '.')  >= #{widthFrom}
+		</if>
+		<if test="widthTo != null and widthTo != ''">
+					AND #{widthTo} >= rtrim(to_char(pl.width, 'FM99999990.9999'), '.')
+		</if>
+		<if test="length != null and length != ''">
+					AND pl.length = #{length}
+		</if>
+		<if test="weightFrom != null and weightFrom != ''  ">
+					AND pl.weight >= #{weightFrom}
+		</if>
+		<if test="weightTo != null and weightTo != ''  ">
+					AND  #{weightTo} >= pl.weight
+		</if>
+
+		<if test=' oilingCode != null and oilingCode != ""'>
+					AND pl.oiling_code =  #{oilingCode}
+		</if>
+
+
+		<if test="coatingWeight != null and coatingWeight != ''  ">
+					AND pl.coating_weight like '%' || #{coatingWeight} || '%'
+		</if>
+
+
+
+		<if test="regionCode != null and regionCode != '' ">
+					AND pl.region_code = #{regionCode}
+		</if>
+		<if test="manufacturerCode != null and manufacturerCode != '' ">
+					AND pl.manufacturer_code = #{manufacturerCode}
+		</if>
+
+		<if test="productGradeCode != null and productGradeCode != '' ">
+					AND pl.PRODUCT_GRADE_CODE = #{productGradeCode}
+		</if>
+
+		<if test='tmpChkPrdId != null '>
+					AND pl.product_id in 
+			<foreach collection="tmpChkPrdId" item="item" open="(" close=")" separator=",">
+			            #{item}
+			</foreach>
+		</if>
+		<choose>
+			<when test = "sortBy != null and sortBy =='specasc'">
+						ORDER BY pl.spec ASC
+			</when>
+			<when test = "sortBy != null and sortBy =='specdesc'">
+						ORDER BY pl.spec DESC
+			</when>
+			<when test = "sortBy != null and sortBy =='sizeasc'">
+						ORDER BY pl.thick ASC
+			</when>
+			<when test = "sortBy != null and sortBy =='sizedesc'">
+						ORDER BY pl.thick DESC
+			</when>
+			<when test = "sortBy != null and sortBy =='priceasc'">
+						ORDER BY pl.sales_unit_price ASC
+			</when>
+			<when test = "sortBy != null and sortBy =='pricedesc'">
+						ORDER BY pl.sales_unit_price DESC
+			</when>
+			<when test = "sortBy != null and sortBy =='nameasc'">
+						ORDER BY pl.product_name ASC
+			</when>
+			<when test = "sortBy != null and sortBy =='namedesc'">
+						ORDER BY pl.product_name DESC
+			</when>
+			<when test = "sortBy != null and sortBy =='weightasc'">
+						ORDER BY pl.WEIGHT ASC
+			</when>
+			<when test = "sortBy != null and sortBy =='weightdesc'">
+						ORDER BY pl.WEIGHT DESC
+			</when>
+			<when test = "sortBy != null and sortBy =='regionasc'">
+						ORDER BY pl.region_code asc
+			</when>
+			<when test = "sortBy != null and sortBy =='producttypeasc'">
+						ORDER BY pl.product_type_code asc
+			</when>
+			<when test = "sortBy != null and sortBy =='manufacturerasc'">
+						ORDER BY pl.manufacturer_code asc
+			</when>
+
+			<otherwise>
+				ORDER BY pl.MODIFIED_DATE DESC
+			</otherwise>
+		</choose>
+		<![CDATA[ 
+		 	) pl WHERE rownum <= #{endRow}
+		 	)pl WHERE pl.rnum >= #{startRow}
+		 	
+		 ]]>
+
+	</select>
+
+	<!-- 모바일 - 관리제품목록카운트 -->
+	<select id="getMobileProductListCnt" parameterType="productVo" resultType="int">
+ 		SELECT count(1) as cnt FROM POSPORTAL.TB_ES_PRODUCT pl WHERE 1=1
+ 		AND (STATUS_CODE = '2' or STATUS_CODE = '3')		 	
+		<if test="productTypeCode != null and productTypeCode != '' and productTypeCode != 'undefined' and productTypeCode != 'null'">
+			AND pl.product_type_code = #{productTypeCode}
+		</if>
+
+		<if test="productName != null and productName != '' and productName != 'undefined'">
+			AND LOWER(pl.product_name) like '%' || #{productName} || '%'
+		</if>
+
+
+		<if test="spec != null and spec == 'A1008'">
+					AND pl.spec like  'A1008%' 
+		</if>
+
+		<if test="spec != null and spec != '' and spec != 'A1008'">
+					AND pl.spec = #{spec}
+		</if>
+		<if test="thickFrom != null and thickFrom != '' and thickFrom != 'undefined'">
+			AND rtrim(to_char(pl.thick, 'FM99999990.9999'), '.')  >= #{thickFrom}
+		</if>
+		<if test="thickTo != null and thickTo != '' and thickTo != 'undefined'">
+			AND #{thickTo} >= rtrim(to_char(pl.thick, 'FM99999990.9999'), '.')
+		</if>
+		<if test="widthFrom != null and widthFrom != ''">
+			AND rtrim(to_char(pl.width, 'FM99999990.9999'), '.')  >= #{widthFrom}
+		</if>
+		<if test="widthTo != null and widthTo != ''">
+			AND #{widthTo} >= rtrim(to_char(pl.width, 'FM99999990.9999'), '.')
+		</if>
+		<if test="length != null and length != ''">
+			AND pl.length = #{length}
+		</if>
+		<if test="weightFrom != null and weightFrom != ''  ">
+			AND pl.weight >= #{weightFrom}
+		</if>
+		<if test="weightTo != null and weightTo != ''  ">
+			AND  #{weightTo} >= pl.weight
+		</if>
+
+		<if test=' oilingCode != null and oilingCode != ""'>   
+					AND pl.oiling_code =  #{oilingCode}
+		</if>
+
+		<if test="coatingWeight != null and coatingWeight != ''  ">
+			AND pl.coating_weight like '%' || #{coatingWeight} || '%'
+		</if>
+
+		<if test="postTreatmentCode != null and postTreatmentCode != ''  ">
+			AND pl.post_treatment_code = #{postTreatmentCode}
+		</if>
+
+		<if test="regionCode != null and regionCode != '' ">
+			AND pl.region_code = #{regionCode}
+		</if>
+		<if test="manufacturerCode != null and manufacturerCode != '' ">
+			AND pl.manufacturer_code = #{manufacturerCode}
+		</if>
+
+		<if test="productGradeCode != null and productGradeCode != '' ">
+					AND pl.PRODUCT_GRADE_CODE = #{productGradeCode}
+		</if>
+
+		<if test='tmpChkPrdId != null '>
+			AND pl.product_id in 
+			<foreach collection="tmpChkPrdId" item="item" open="(" close=")" separator=",">
+	            #{item}
+			</foreach>
+		</if>
+	</select>
+
+	<!-- 관리제품목록 -->
+	<select id="getProductDetail" parameterType="productVo" resultType="productVo">
+		<![CDATA[ 
+			SELECT 
+				product_id as productId --제품ID
+				,product_type_code as productTypeCode --제품분류 코드 전체:9999,CR  1000,F/H 2000,PO  3000,GI   4000,HGI 5000,EGI 6000,NO 7000,GO 8000,HR  9000,후판1100,포스맥 1200,철근 1300,구조용 강관 1400,D-bar 1500,빌렛 1600,블룸 1700,슬라브 1800,선재 1900,
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'PRODUCT_TYPE_CODE' and CD_V = pl.product_type_code) as productTypeCodeName
+				,product_name as productName --품명(Coil,Sheet, Skelp)
+				,product_grade_code as productGradeCode -- 등급(1.정품, 2.주문외)
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'PRODUCT_GRADE_CODE' and CD_V = pl.product_grade_code) as productGradeCodeName
+				,spec as spec --규격
+				,rtrim(to_char(thick, 'FM99999990.9999'), '.') as thick --두께(범위 : 0.100~99.999)
+				,rtrim(to_char(width, 'FM99999990.9999'), '.') as width --폭(범위 : 1~1,800)
+				,length as length --길이(범위 : 1~99,999)
+				,rtrim(to_char(weight, 'FM99999990.9999'), '.') as weight --중량(KG) (1~99,999)
+				,region_code as regionCode --재고지역코드(1광양,2시화,3평택,4대구,5부산,6인천,0,전국)
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'REGION_CODE' and CD_V = pl.region_code) as regionCodeName 
+				,manufacturer_code as manufacturerCode --제조사코드 (1포스코 ,2동부 ,3동국 ,4현대 ,5수입재)
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'MANUFACTURER_CODE' and CD_V = pl.manufacturer_code) as manufacturerCodeName
+				,sales_unit_price as salesUnitPrice --판매가격(\/kg) NULL(가격협의) -> NOT NULL 일때 표시 
+				,oiling_code as oilingCode --도유 (일반 1/라이트2)
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'OILING_CODE' and CD_V = pl.oiling_code) as oilingCodeName
+				,coating_weight as coatingWeight --도금량 (g)
+				,post_treatment_code as postTreatmentCode --후처리 
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'POST_TREATMENT_CODE' and CD_V = pl.post_treatment_code) as postTreatmentCodeName
+				, rtrim(to_char(c_pct, 'FM99999990.9999'), '.') as cPct --C 0.0001 %
+				, rtrim(to_char(yp_mpa, 'FM99999990.9999'), '.') as ypMpa --YP (Mpa)
+				, rtrim(to_char(ts__mpa, 'FM99999990.9999'), '.') as tsMpa --TS (Mpa)
+				, rtrim(to_char(el_mpa, 'FM99999990.9999'), '.') as elMpa --EL (Mpa)
+				,USAGE as usage
+				,pic_file_id as picFileId --첨부파일 사진 ID
+		 	FROM POSPORTAL.TB_ES_PRODUCT pl
+		 	WHERE 1=1
+            AND product_id = #{productId}
+		]]>
+	</select>
+
+	<!-- 견적제품목록 -->
+	<select id="getEstimateDetailList" parameterType="estimateVo" resultType="estimateVo">
+
+			SELECT 
+				estd.ESTIMATE_DETAIL_SEQ as productId --견적상세시퀀스
+				,pl.product_type_code as productTypeCode --제품분류 코드 전체:9999,CR  1000,F/H 2000,PO  3000,GI   4000,HGI 5000,EGI 6000,NO 7000,GO 8000,HR  9000,후판1100,포스맥 1200,철근 1300,구조용 강관 1400,D-bar 1500,빌렛 1600,블룸 1700,슬라브 1800,선재 1900,
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'PRODUCT_TYPE_CODE' and CD_V = pl.product_type_code) as productTypeCodeName
+				,product_name as productName --품명(Coil,Sheet, Skelp)
+				,spec as spec --규격
+				,rtrim(to_char(thick, 'FM9990.9999'), '.') as thick --두께(범위 : 0.100~99.999)
+				,rtrim(to_char(width, 'FM9990.9999'), '.')as width --폭(범위 : 1~1,800)
+				,length as length --길이(범위 : 1~99,999)
+				,weight as weight --중량(KG) (1~99,999)
+				,sales_unit_price as salesUnitPrice --판매가격(\/kg) NULL(가격협의) -> NOT NULL 일때 표시 
+				,coating_weight as coatingWeight --도금량 (g)
+				,manufacturer_code as manufacturerCode --제조사코드 (1포스코 ,2동부 ,3동국 ,4현대 ,5수입재)
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'MANUFACTURER_CODE' and CD_V = pl.manufacturer_code) as manufacturerCodeName
+				,product_grade_code as productGradeCode -- 등급(1.정품, 2.주문외)
+				,(select CD_EXPL1 from POSPORTAL.TB_ES_CODE_DEFINITION where ACTIVE_FLAG = 'Y' AND CODE_CLASS = 'PRODUCT_GRADE_CODE' and CD_V = pl.product_grade_code) as productGradeCodeName
+				,INCLUDE_YN as includeYn --견적포함여부
+				,estd.modified_Date as modifiedDate
+				,to_char(estd.CREATE_DATE,'yyyy-mm-dd hh24:mi') AS createDate
+		 	FROM POSPORTAL.TB_ES_ESTIMATE_DETAIL estd, POSPORTAL.TB_ES_PRODUCT pl, POSPORTAL.TB_ES_ESTIMATE est
+		 	WHERE estd.PRODUCT_ID = pl.PRODUCT_ID
+		 	  AND estd.ESTIMATE_NO = #{estimateNo}
+		 	  AND estd.ESTIMATE_NO = est.ESTIMATE_NO
+		 	  AND estd.IS_DELETE = 'N'
+		 	  AND est.IS_DELETE = 'N'
+		 	  AND est.STATUS_CODE != '4'
+		 	  		<!-- AND est.STATUS_CODE != '5' -->
+		<!-- AND pl.PRODUCT_ID NOT IN (
+		 	  	SELECT tPl.PRODUCT_ID FROM 
+		 	  		POSPORTAL.TB_ES_PRODUCT tPl, POSPORTAL.TB_ES_ESTIMATE_DETAIL tEstd, POSPORTAL.TB_ES_ESTIMATE tEst
+		 	  		WHERE tEstd.ESTIMATE_NO != #{estimateNo}
+		 	  		  AND tEst.ESTIMATE_NO = tEstd.ESTIMATE_NO
+		 	  		  AND tEstd.PRODUCT_ID = tPl.PRODUCT_ID
+		 	  		  AND tEst.STATUS_CODE in ('2','5')
+		 	  		  AND tPl.STATUS_CODE in ('3','6','7','8','9')
+		 	  ) -->
+		 ORDER BY pl.PRODUCT_NAME ASC
+		
+	</select>
+	<!-- 견적번호확인 -->
+	<select id="getEstimateNo" parameterType="String" resultType="int">
+ 		SELECT count(estimate_no) as cnt FROM POSPORTAL.TB_ES_ESTIMATE
+ 		 WHERE estimate_no = #{estimateNo}
+	</select>
+
+	<!-- 견적등록 -->
+	<insert id="insertEstimate" parameterType="estimateVo">
+ 		INSERT INTO POSPORTAL.TB_ES_ESTIMATE(
+ 								   	ESTIMATE_NO,
+ 								   	STATUS_CODE,
+ 								   	CUSTOMER_NAME,
+		<if test="customerEmail != null and customerEmail != '' ">
+ 								   	CUSTOMER_EMAIL,
+		</if>
+		<if test="customerPhone != null and customerPhone != '' ">
+ 								   	CUSTOMER_PHONE,
+		</if>
+		<if test="customerId != null and customerId != '' ">
+ 								   	CUSTOMER_ID,
+		</if>
+ 								   	
+ 								   	CREATER_ID,
+ 								   	MODIFIER_ID
+ 								  )
+ 							VALUES(
+ 									#{estimateNo},
+ 									'1',
+ 									#{customerName},
+		<if test="customerEmail != null and customerEmail != '' ">
+ 									#{customerEmail},
+		</if>
+		<if test="customerPhone != null and customerPhone != '' ">
+ 									#{customerPhone},
+		</if>
+		<if test="customerId != null and customerId != '' ">
+ 									#{customerId},
+		</if>
+ 									'CUSTOMER',
+ 									'CUSTOMER'
+ 								  )
+	</insert>
+
+	<!-- 견적 제품등록 -->
+	<insert id="insertEstimateProduct" parameterType="estimateVo">
+ 		INSERT INTO POSPORTAL.TB_ES_ESTIMATE_DETAIL(
+									 		 ESTIMATE_DETAIL_SEQ,
+									 		 ESTIMATE_NO, 
+									 		 PRODUCT_ID,
+									 		 INCLUDE_YN,  
+									 		 CREATER_ID,
+ 								   			 MODIFIER_ID
+								 		 )
+								   VALUES(
+										     POSPORTAL.SQ_ES_ESTIMATE_DETAIL.nextval, 
+										     #{estimateNo},
+										     #{productId},
+										     'Y',
+											 'CUSTOMER',
+ 											 'CUSTOMER'
+										 )
+	</insert>
+
+	<!-- 견적삭제 -->
+	<update id="updateEstimateDelete" parameterType="estimateVo">
+		UPDATE POSPORTAL.TB_ES_ESTIMATE SET IS_DELETE = 'Y', MODIFIER_ID = 'CUSTOMER', MODIFIED_DATE = sysdate
+		WHERE ESTIMATE_NO = #{estimateNo}        
+	</update>
+
+	<!-- 견적상품제거 -->
+	<update id="updateEstimateProductDelete" parameterType="estimateVo">
+		UPDATE POSPORTAL.TB_ES_ESTIMATE_DETAIL SET IS_DELETE = 'Y', MODIFIER_ID = 'CUSTOMER', MODIFIED_DATE = sysdate
+		WHERE ESTIMATE_DETAIL_SEQ IN
+		<foreach collection="changeEstimateProductList" item="item" open="(" close=")" separator=",">
+            #{item}
+		</foreach>
+	</update>
+
+	<!-- 견적상품포함여부수정 -->
+	<update id="updateEstimateProductInclude" parameterType="estimateVo">
+		UPDATE POSPORTAL.TB_ES_ESTIMATE_DETAIL SET INCLUDE_YN = #{includeYn}, MODIFIER_ID = 'CUSTOMER', MODIFIED_DATE = sysdate
+		WHERE ESTIMATE_DETAIL_SEQ = #{estimateDetailSeq}
+		  		<!-- AND ESTIMATE_NO = #{estimateNo} AND PRODUCT_ID = #{productId} -->
+	</update>
+
+	<!-- 지역별 제품 중량 -->
+	<select id="getEstimateRegionTotalWeight" resultType="productVo">
+		   SELECT SUBSTR(WAREHOUSE,1,1)  as regionCode, ROUND(sum(WEIGHT) /1000) as weight
+			FROM POSPORTAL.TB_ES_PRODUCT WHERE STATUS_CODE IN ('2','3') 
+			AND SUBSTR(WAREHOUSE,1,1) in (select CD_V FROM POSPORTAL.TB_ES_CODE_DEFINITION where CODE_CLASS='REGION_CODE')
+
+		<if test="productName != null and productName != ''  ">  
+		      AND (PRODUCT_NAME LIKE '%' || #{productName} || '%'
+		           OR LENGTH LIKE '%' || #{productName} || '%'
+		           OR THICK LIKE '%' || #{productName} || '%'
+		           OR WIDTH LIKE '%' || #{productName} || '%')
+		</if>
+		   GROUP BY SUBSTR(WAREHOUSE,1,1)   ORDER BY SUBSTR(WAREHOUSE,1,1)   ASC
+	</select>
+
+	<!-- 지역별 제품별 중량 -->
+	<select id="getEstimateRegionPrdTotalWeight" parameterType="productVo" resultType="productVo">
+			SELECT PRODUCT_TYPE_CODE AS productTypeCode, ROUND(sum(WEIGHT) /1000) AS weight  
+				FROM POSPORTAL.TB_ES_PRODUCT WHERE STATUS_CODE IN ('2','3')  
+		<if test="regionCode != null and regionCode != ''  ">  
+			        AND REGION_CODE = #{regionCode}
+		</if>
+		<if test="productName != null and productName != ''  ">  
+			        AND (PRODUCT_NAME LIKE '%' || #{productName} || '%'
+			           OR LENGTH LIKE '%' || #{productName} || '%'
+			           OR THICK LIKE '%' || #{productName} || '%'
+			           OR WIDTH LIKE '%' || #{productName} || '%')
+		</if>
+		    GROUP BY PRODUCT_TYPE_CODE 
+			ORDER BY PRODUCT_TYPE_CODE ASC
+		           
+	</select>
+
+	<select id="getEstimateRegionPrdDetailTotalWeight" parameterType="productVo" resultType="productVo">
+		   SELECT productTypeCode1 as productTypeCode , productName, ROUND(sum(weight)) as weight FROM (
+				SELECT PRODUCT_TYPE_CODE as productTypeCode1, 
+					   CASE WHEN INSTR(LOWER(PRODUCT_NAME),'coil',1,1) > 0
+					   THEN 'coil'
+					   WHEN INSTR(LOWER(PRODUCT_NAME),'skelp',1,1) > 0
+					   THEN 'skelp'
+					   WHEN INSTR(LOWER(PRODUCT_NAME),'sheet',1,1) > 0
+					   THEN 'sheet'
+					   END AS productName,
+					   sum(WEIGHT) /1000 as weight
+				  FROM POSPORTAL.TB_ES_PRODUCT WHERE STATUS_CODE IN ('2','3') 
+		<if test="regionCode != null and regionCode != ''  ">  
+				      AND REGION_CODE = #{regionCode}
+		</if>
+		<if test="productName != null and productName != ''  ">  
+				      AND (PRODUCT_NAME LIKE '%' || #{productName} || '%'
+				           OR LENGTH LIKE '%' || #{productName} || '%'
+				           OR THICK LIKE '%' || #{productName} || '%'
+				           OR WIDTH LIKE '%' || #{productName} || '%')
+		</if>
+				GROUP BY PRODUCT_TYPE_CODE,PRODUCT_NAME
+			) GROUP BY productTypeCode1,productName ORDER BY productTypeCode1 ASC, productName ASC
+		   
+	</select>
+
+	<select id="getProductDashboardList" resultType="dashBoardVo">
+
+		<![CDATA[ 
+			SELECT 
+				A.PRODUCT_TYPE_CODE AS productTypeCode	
+				,B.CD_EXPL1 AS productTypeName
+				,B.CD_EXPL2 AS productTypeKorName
+				,A.DISPLAY_GROUP_NAME AS displayGroupName	
+				,A.DISPLAY_GROUP_ORDER	AS displayGroupOrder
+				,A.CODE_CLASS AS codeClass
+				,A.CODE_VALUE AS codeValue
+				,A.POSTING_TEXT AS postingText
+				,A.DISPLAY_ORDER AS displayOrder
+			FROM 
+				POSPORTAL.TB_ES_POSTING_PRODUCT A,   POSPORTAL.TB_ES_CODE_DEFINITION B
+			WHERE  1 = 1
+				AND A.USE_YN = 'Y' 
+				AND B.CODE_CLASS ='PRODUCT_TYPE_CODE'
+				AND A.PRODUCT_TYPE_CODE = B.CD_V 
+				AND B.ISO_LANG_TP ='kr'
+			
+			ORDER BY A.PRODUCT_TYPE_CODE, A.DISPLAY_GROUP_ORDER,A.DISPLAY_ORDER
+		 ]]>
+	</select>
+
+	<!-- 가격상태 변경 -->
+	<update id="updateProductPriceStatus" parameterType="estimateVo">
+		UPDATE POSPORTAL.TB_ES_PRODUCT 
+            SET PRICE_STATUS_CODE = 'R', STATUS_CODE = '3'
+        WHERE STATUS_CODE NOT IN ('6','7','8','9') AND PRODUCT_ID IN
+		<foreach collection="updateProductIdList" item="item" open="(" close=")" separator=",">
+            #{item}
+		</foreach>
+
+	</update>
+</mapper>

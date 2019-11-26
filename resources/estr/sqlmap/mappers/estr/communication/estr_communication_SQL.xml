@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper
+	namespace="com.posco_daewoo.estr.communication.service.impl.CommunicationMapper">
+
+	<!-- Seq 획득 -->
+	<select id="selectCommunicationId" resultType="int">
+        <![CDATA[
+				SELECT	 POSPORTAL.SQ_ES_COMMUINICATION.nextval AS communicationId FROM DUAL
+			]]>
+	</select>
+
+	<!-- ProductId로 제품명 가져오기 -->
+	<select id="getProductTypeNameById" resultType="String">
+        <![CDATA[
+				SELECT	 PRODUCT_NAME AS productTypeName FROM POSPORTAL.TB_ES_PRODUCT 
+				WHERE PRODUCT_ID =#{communicationId}
+			]]>
+	</select>
+
+
+	<!-- 문의내역 저장 -->
+	<insert id="insertCommunication" parameterType="communicationVo">
+		INSERT INTO POSPORTAL.TB_ES_COMMUNICATION(
+		COMMUNICATION_ID,
+		<if test="senderId != null and senderId != ''   ">
+			SENDER_ID,
+		</if>
+		SENDER_TYPE_CD,
+		<if test="receiverId != null and receiverId != ''   ">
+			RECEIVER_ID,
+		</if>
+		RECEIVER_TYPE_CD,
+		<if test="sendTypeCode != null and sendTypeCode != ''   ">
+			SEND_TYPE_CODE,
+		</if>
+		SEND_RESULT_CODE,
+		<if test="sendResultText != null and sendResultText != ''   ">
+			SEND_RESULT_TEXT,
+		</if>
+		SEND_MSG,
+		PAGE_TYPE,
+		<if test="keyId != null and keyId != ''   ">
+			KEY_ID,
+		</if>
+		CUSTOMER_NAME,
+		<if test="customerTel != null and customerTel != ''   ">
+			CUSTOMER_TEL,
+		</if>
+		<if test="customerEmail != null and customerEmail != ''   ">
+			CUSTOMER_EMAIL,
+		</if>
+		IS_DELETE,
+		SEND_RESULT_TYPE_CODE,
+		CREATE_DATE,
+		CREATER_ID,
+		MODIFIED_DATE,
+		MODIFIER_ID
+		)
+		VALUES(
+		#{communicationId},
+		<if test="senderId != null and senderId != ''   ">
+			#{senderId},
+		</if>
+		#{senderTypeCd},
+		<if test="receiverId != null and receiverId != ''   ">
+			#{receiverId},
+		</if>
+		#{receiverTypeCd},
+		<if test="sendTypeCode != null and sendTypeCode != ''   ">
+			#{sendTypeCode},
+		</if>
+		#{sendResultCode},
+		<if test="sendResultText != null and sendResultText != ''   ">
+			#{sendResultText},
+		</if>
+		#{sendMsg},
+		#{pageType},
+		<if test="keyId != null and keyId != ''   ">
+			#{keyId},
+		</if>
+		#{customerName},
+		<if test="customerTel != null and customerTel != ''   ">
+			#{customerTel},
+		</if>
+		<if test="customerEmail != null and customerEmail != ''   ">
+			#{customerEmail},
+		</if>
+		'N',
+		#{sendResultTypeCode},
+		sysdate,
+		#{createrId},
+		sysdate,
+		#{modifierId}
+
+		)
+	</insert>
+
+	<!-- 문의내역 발송내역 상태 -->
+	<update id="updateCommunicationSendResult" parameterType="communicationVo">
+        <![CDATA[
+			UPDATE POSPORTAL.TB_ES_COMMUNICATION
+				SET SEND_RESULT_CODE = #{sendResultCode}
+			WHERE COMMUNICATION_ID = #{communicationId}
+		 ]]>
+	</update>
+
+	<!-- SMS 예약 입력 -->
+
+	<insert id="insertTransSchedule" parameterType="transScheduleVo">
+		INSERT INTO
+		POSPORTAL.TB_ES_TRANS_SCHEDULE(
+		SEQ_NO
+		,TRANS_METHOD_CD
+		,TRANS_PURPOSE_CD
+		,SENDER_TEL_NO
+		,RECEIVER_TEL_NO
+		,SENDER_EMAIL_ADDRESS
+		,RECEIVER_EMAIL_ADDRESS
+		,EMAIL_TITLE
+		,CONTENTS
+		,RESERVED_TIME
+		,TRANS_STATUS_CD
+		,TRANS_RETRY_CNT
+		
+		)VALUES(
+
+		POSPORTAL.FN_GET_SEQ('TS')
+		,#{transMethodCd}
+		,#{transPurposeCd}
+		,#{senderTelNo}
+		,#{receiverTelNo}
+		,#{senderEmailAddress}
+		,#{receiverEmailAddress}
+		,#{emailTitle}
+		,#{contents}
+		,SYSDATE
+		,#{transStatusCd}
+		,-1
+		)
+	</insert>
+
+
+
+</mapper>

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="estr.cmm.service.impl.EstrCommonMapper">
+
+
+	<!-- 공통코드 목록 -->
+	<select id="getEstrCommonCodeList" parameterType="estrCmmVo" resultType="estrCmmVo">
+		<![CDATA[  
+			SELECT 
+				code_class as codeClass --코드그룹명
+				,iso_lang_tp as isoLangTp --ISO언어구분
+				,cd_v as cdV --코드값
+				,cd_expl1 as cdExpl1 --코드설명1
+				,form_disp_seq as formDispSeq --화면Display순서
+			FROM POSPORTAL.TB_ES_CODE_DEFINITION
+			WHERE code_class= #{codeClass}
+		]]>
+		<if test='codeList != null '>
+			AND cd_v in
+			<foreach collection="codeList" item="item" open="(" close=")" separator=",">
+				#{item}
+			</foreach>
+		</if>
+		<![CDATA[  
+			  AND ACTIVE_FLAG = 'Y'			
+		]]>
+		ORDER BY cd_v asc
+	</select>
+
+	<!-- 지역 상세 코드 -->
+	<select id="getEstrRegionMCodeList" resultType="estrCmmVo">
+		<![CDATA[  
+			SELECT CD_V As cdV
+			, CD_EXPL1 || ' ('||(SELECT TO_CHAR(ROUND(NVL(SUM(WEIGHT),1)/1000,0),'999,999')  FROM POSPORTAL.TB_ES_PRODUCT WHERE STATUS_CODE in ('2','3') AND  WAREHOUSE LIKE OT.CD_V||'%')||'톤)' AS cdExpl1
+			, (SELECT COUNT(1) FROM POSPORTAL.TB_ES_CODE_DEFINITION RT WHERE RT.CODE_CLASS = 'REGION_M_CODE' AND SUBSTR(OT.CD_V,0,1) = SUBSTR(RT.CD_V,0,1))  AS codeCnt
+			FROM POSPORTAL.TB_ES_CODE_DEFINITION OT
+			WHERE CODE_CLASS = 'REGION_M_CODE'
+			AND ACTIVE_FLAG = 'Y'			
+			ORDER BY CD_V ASC
+		]]>
+	</select>
+
+	<!-- 제품스펙 목록 -->
+	<select id="getProductSpecList" parameterType="productVo" resultType="productVo">
+		<![CDATA[  
+			SELECT 
+				spec as spec --규격		
+			FROM POSPORTAL.TB_ES_PRODUCT pl
+			WHERE status_code in ('2','3')
+			  AND IS_DELETE = 'N'	
+			  AND spec is not null
+		]]>
+		<if test="productTypeCode != null and productTypeCode != '' and productTypeCode != 'undefined' and productTypeCode != 'null'">
+			AND pl.product_type_code = #{productTypeCode}
+		</if>
+		<![CDATA[  
+			GROUP BY spec			
+		]]>
+	</select>
+
+	<!-- 제품도금 목록 -->
+	<select id="getProductCoatingWeightList" parameterType="productVo" resultType="productVo">
+		<![CDATA[  
+			SELECT 
+				COATING_WEIGHT as coatingWeight --규격		
+			FROM POSPORTAL.TB_ES_PRODUCT pl
+			WHERE status_code in ('2','3')
+			  AND IS_DELETE = 'N'	
+			  AND COATING_WEIGHT is not null
+		]]>
+		<if test="productTypeCode != null and productTypeCode != '' and productTypeCode != 'undefined' and productTypeCode != 'null'">
+			AND pl.product_type_code = #{productTypeCode}
+		</if>
+		<![CDATA[  
+			GROUP BY COATING_WEIGHT			
+		]]>
+	</select>
+
+	<!-- 제품도유 목록 -->
+	<select id="getProductOilingCodeList" parameterType="productVo" resultType="productVo">
+		<![CDATA[  
+			SELECT 
+				oiling_code as oilingCode --규격		
+			FROM POSPORTAL.TB_ES_PRODUCT pl
+			WHERE status_code in ('2','3')
+			  AND IS_DELETE = 'N'	
+			  AND product_type_code = #{productTypeCode}
+			GROUP BY oiling_code			
+		 ]]>
+	</select>
+
+	<!-- 제품후처리 목록 -->
+	<select id="getProductPostTreatmentCodeList" parameterType="productVo" resultType="productVo">
+		<![CDATA[  
+			SELECT 
+			POST_TREATMENT_CODE AS postTreatmentCode	
+			FROM POSPORTAL.TB_ES_PRODUCT pl
+			WHERE STATUS_CODE IN ('2','3')
+			  AND PRODUCT_TYPE_CODE = #{productTypeCode}
+			AND POST_TREATMENT_CODE IS NOT NULL
+			GROUP BY POST_TREATMENT_CODE		
+		 ]]>
+	</select>
+
+
+
+	<!-- 공지사항 목록 -->
+	<select id="getEstrNoticeList" parameterType="noticeVo" resultType="noticeVo">
+	
+				SELECT  
+				SEQ_NO AS seqNo,
+				ROW_TYPE AS rowType,
+				ROW_CONTENT AS rowContent,
+				ROW_COLOR AS rowColor,
+				ROW_FONT as rowFont,
+				PRODUCT_TYPE_CODE as productTypeCode,
+				PRODUCT_NAME as productName,
+				REGIION_CODE as regionCode,
+				THICK AS thick,
+				SPEC AS productSpec,
+				MANUFACTURER_CODE AS manufacturerCode,
+				PRODUCT_GRADE_CODE AS productGradeCode,
+				POST_TREATEMENT_CODE AS postTreatmentCode,
+				SORT AS sort,
+				WAREHOUSE AS wareHouse,
+				REMARKS AS remarks,
+				USE_YN AS useYn,
+				CREATOR_ID AS creatorId,
+				TO_CHAR(CREATE_DATE,'YYYY-MM-DD HH24:MI:SS') AS createDate,
+				MODIFIER_ID AS modifierId,
+				TO_CHAR(MODIFIED_DATE,'YYYY-MM-DD HH24:MI:SS') AS modifiedDate
+				
+				FROM POSPORTAL.TB_ES_NOTICE_BOARD
+				WHERE USE_YN = 'Y'
+				
+				ORDER BY SEQ_NO
+	
+	</select>
+
+
+</mapper>

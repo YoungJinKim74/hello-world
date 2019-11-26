@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.posco_daewoo.estr.customer.service.impl.CustomerMapper">
+		
+<select id="getLogicCustomer" parameterType="logicCustomerVo" resultType="logicCustomerVo">
+			<![CDATA[
+				SELECT 
+				CUSTOMER_ID AS customerId
+				,CUSTOMER_COMPANY_NAME AS customerCompanyName
+				,CUSTOMER_NAME AS customerName
+				,CUSTOMER_TEL AS customerTel
+				,CUSTOMER_EMAIL AS customerEmail
+				,IS_DELETE AS isDelete
+				,CREATE_DATE AS createDate
+				,CREATER_ID AS createrId
+			   ,MODIFIED_DATE AS modifiedDate
+				,MODIFIER_ID AS modifierId 
+				FROM POSPORTAL.TB_ES_CUSTOMER
+				WHERE 
+				1 = 1 
+				AND CUSTOMER_TEL = #{customerTel}
+				AND ROWNUM = 1
+				]]>	
+	</select>
+	
+ 	<insert id="insertLogicCustomer" parameterType="logicCustomerVo">
+			
+				INSERT INTO POSPORTAL.TB_ES_CUSTOMER(
+				CUSTOMER_ID 
+			
+				<if test="customerCompanyName != null and customerCompanyName != ''   ">
+				,CUSTOMER_COMPANY_NAME 
+				</if>
+
+				<if test="customerName != null and customerName != ''   ">
+				,CUSTOMER_NAME 
+				</if>
+				
+				<if test="customerTel != null and customerTel != ''   ">
+				,CUSTOMER_TEL 
+				</if>
+
+				<if test="customerEmail != null and customerEmail != ''   ">
+				,CUSTOMER_EMAIL 
+				</if>
+				
+				,IS_DELETE
+				,CREATE_DATE
+				,CREATER_ID 
+			   ,MODIFIED_DATE 
+				,MODIFIER_ID
+				)VALUES (				
+				POSPORTAL.SQ_ES_CUSTOMER.NEXTVAL
+				
+				<if test="customerCompanyName != null and customerCompanyName != ''   ">
+			 	,#{customerCompanyName}
+				</if>
+
+				<if test="customerName != null and customerName != ''   ">
+				,#{customerName}
+				</if>
+				
+				<if test="customerTel != null and customerTel != ''   ">
+				,#{customerTel}
+				</if>
+
+				<if test="customerEmail != null and customerEmail != ''   ">
+				,#{customerEmail}			
+				</if>
+				,'N'
+				,SYSDATE
+				,'ESTR_USER'
+				,SYSDATE
+				,'ESTR_USER'
+				)
+		
+			
+		</insert>
+	
+		<update id="updateLogicCustomer" parameterType="logicCustomerVo">
+			
+				UPDATE POSPORTAL.TB_ES_CUSTOMER SET 
+				<if test="customerCompanyName != null and customerCompanyName != ''   ">
+				 CUSTOMER_COMPANY_NAME  = #{customerCompanyName}
+				</if>
+
+				<if test="customerName != null and customerName != ''   ">
+				,CUSTOMER_NAME  = #{customerName}
+				</if>
+				
+				<if test="customerTel != null and customerTel != ''   ">
+				,CUSTOMER_TEL  = #{customerTel}
+				</if>
+
+				<if test="customerEmail != null and customerEmail != ''   ">
+				,CUSTOMER_EMAIL  = #{customerEmail}
+				</if>
+				
+				,MODIFIED_DATE  = SYSDATE
+				,MODIFIER_ID = 'ESTR_USER'
+				WHERE 
+				CUSTOMER_ID = #{customerId}
+			
+		</update>
+		
+</mapper>
